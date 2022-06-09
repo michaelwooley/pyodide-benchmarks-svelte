@@ -4,36 +4,42 @@ import preprocess from 'svelte-preprocess';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	// Consult https://github.com/sveltejs/svelte-preprocess
-	// for more information about preprocessors
-	preprocess: [
-		preprocess({
-			scss: {
-				prependData: '@use "src/variables.scss" as *;'
-			}
-		})
-	],
+    // Consult https://github.com/sveltejs/svelte-preprocess
+    // for more information about preprocessors
+    preprocess: [
+        preprocess({
+            scss: {
+                prependData: '@use "src/variables.scss" as *;'
+            }
+        })
+    ],
 
-	kit: {
-		adapter: adapter(),
+    kit: {
+        adapter: adapter(),
 
-		vite: {
-			resolve: {
+        vite: {
+            resolve: {
                 alias: {
                     $components: resolve('./src/components'),
                     $containers: resolve('./src/containers')
                 }
             },
 
-			css: {
-				preprocessorOptions: {
-					scss: {
-						additionalData: '@use "src/variables.scss" as *;'
-					}
-				}
-			}
-		}
-	}
+            css: {
+                preprocessorOptions: {
+                    scss: {
+                        additionalData: '@use "src/variables.scss" as *;'
+                    }
+                }
+            },
+
+            server: {
+                fs: {
+                    allow: ['.pyodide']
+                }
+            }
+        }
+    }
 };
 
 export default config;
