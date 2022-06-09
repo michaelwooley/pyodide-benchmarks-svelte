@@ -13,14 +13,16 @@ cd $DST_DIR
 
 if [ -f "${TAR_BZ2_NAME}" ];
 then
-    echo "[preinstall] pyodide.tar.bz2 already downloaded."
-    exit
+    echo "[preinstall] pyodide.tar.bz2 already downloaded. Reusing."
 else
     # if file exist the it will be printed
     echo "[preinstall] Downloading pyodide from github build..."
+    curl -LJ -o ${TAR_BZ2_NAME} ${DOWNLOAD_URL}
 fi
 
+echo "Unpacking fresh pyodide.tar.bz2"
 rm -rf pyodide
-
-curl -LJ -o ${TAR_BZ2_NAME} ${DOWNLOAD_URL}
 tar -xf $TAR_BZ2_NAME
+
+echo "Fixing pyodide.mjs to ignore dynamic import stuff (only applies in node case). (REFERENCE https://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations)"
+sed -i 's/import(/import( \/* @vite-ignore *\/ /g' pyodide/pyodide.mjs
