@@ -1,2 +1,7 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+    import PyodideMainThreadDemo from '$containers/PyodideMainThreadDemo.svelte';
+</script>
+
+<h1 class="title is-1">A first demo...</h1>
+
+<PyodideMainThreadDemo />
