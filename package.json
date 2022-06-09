@@ -2,6 +2,7 @@
 	"name": "pyodide-benchmarks-svelte",
 	"version": "0.0.1",
 	"scripts": {
+		"download-pyodide": "./scripts/install_pyodide",
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build",
 		"package": "svelte-kit package",
@@ -26,9 +27,12 @@
 		"prettier-plugin-svelte": "^2.7.0",
 		"svelte": "^3.44.0",
 		"svelte-check": "^2.7.1",
-		"svelte-preprocess": "^4.10.6",
+		"svelte-preprocess": "^4.10.5",
 		"tslib": "^2.3.1",
-		"typescript": "^4.7.2"
+		"typescript": "^4.7.2",
+		"pyodide": "file:.pyodide/pyodide",
+		"sass": "^1.49.11",
+		"bulma": "^0.9.3"
 	},
 	"type": "module"
 }
