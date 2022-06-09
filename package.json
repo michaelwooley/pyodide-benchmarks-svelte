@@ -2,6 +2,7 @@
 	"name": "pyodide-benchmarks-svelte",
 	"version": "0.0.1",
 	"scripts": {
+		"download-pyodide": "./scripts/install_pyodide",
 		"dev": "svelte-kit dev",
 		"build": "svelte-kit build",
 		"package": "svelte-kit package",
