@@ -4,8 +4,7 @@
         PROJECT_EMOJI,
         PROJECT_LICENSE,
         PROJECT_LICENSE_URL,
-        PROJECT_NAME,
-        PROJECT_REPO
+        PROJECT_NAME
     } from '$lib/constants';
     import * as routes from '$lib/routes';
 </script>

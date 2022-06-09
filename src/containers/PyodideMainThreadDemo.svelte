@@ -47,9 +47,9 @@
     };
 
     onMount(async () => {
-        const pkg = await await import('$lib/py');
-        const interpreterFactory = await pkg.interpreterFactory;
-        const loadPyodide = await pkg.loadPyodide;
+        const pkg = await import('$lib/py');
+        const interpreterFactory = pkg.interpreterFactory;
+        const loadPyodide = pkg.loadPyodide;
         const markStart = 'markStart',
             markEnd = 'markEnd';
         performance.mark(markStart);
@@ -125,7 +125,7 @@
                                 }}
                             >
                                 <option default disabled selected>Code examples</option>
-                                {#each codeExamples as ex, i}
+                                {#each codeExamples as ex}
                                     <option>{ex.name}</option>
                                 {/each}
                             </select>
