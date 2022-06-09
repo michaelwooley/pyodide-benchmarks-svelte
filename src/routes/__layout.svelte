@@ -18,9 +18,6 @@
 <Footer />
 
 <style lang="scss">
-    body {
-        min-height: 100vh;
-    }
     main {
         min-height: calc(100vh - 150px);
     }
