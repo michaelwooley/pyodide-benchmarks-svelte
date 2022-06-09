@@ -37,6 +37,9 @@ const config = {
                 fs: {
                     allow: ['.pyodide']
                 }
+            },
+            worker: {
+                format: 'es'
             }
         }
     }

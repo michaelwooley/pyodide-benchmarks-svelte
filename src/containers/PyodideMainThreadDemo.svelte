@@ -21,7 +21,6 @@
         // if (kind === "stdout") {
         //     const currentOutput = output.pop();
         //     currentOutput.s += s;
-
         // }
 
         output = output.concat([{ s, kind }]);
