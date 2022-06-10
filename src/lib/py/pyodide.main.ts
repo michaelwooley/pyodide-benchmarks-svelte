@@ -1,5 +1,7 @@
 /**
  * Main thread interface for interacting with worker module
+ *
+ * // TODO Actually adopt for use elsehwere
  */
 
 import {

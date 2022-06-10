@@ -1,84 +1,229 @@
-import { PYODIDE_INDEX_URL } from '$lib/constants';
 import * as pyodidePkg from 'pyodide';
+import type { PyProxy } from 'pyodide/pyodide.d';
+import type {
+    IOutputClientCmdPayload,
+    IPyError,
+    IRunCompleteClientCmdPayload,
+    IRunCompleteStatementClientCmdPayload,
+    IRunStartClientCmdPayload,
+    IRunStartStatementClientCmdPayload,
+    IStartupRunClientCmdPayload,
+    IWorkerErrorClientCmdPayload
+} from '$lib/py/protocol';
 
 export type PyodideInterface = GetInsidePromise<ReturnType<typeof pyodidePkg.loadPyodide>>;
 
-export async function loadPyodide() {
-    // const pyodidePkg = await import('pyodide'); // Really need here?
-    const pyodide: PyodideInterface = await pyodidePkg.loadPyodide({
-        indexURL: PYODIDE_INDEX_URL,
-        stdout: console.info,
-        stderr: console.warn
-    });
+export type PyInterfaceExtended = PyodideInterface & {
+    reprShorten: PyProxy; // TODO Type this...Callable..
+    banner: string;
+};
 
-    const banner: string = pyodide.runPython(
-        `
-    import sys
-    from pyodide.console import PyodideConsole, BANNER,repr_shorten
-    import __main__
-    pyconsole = PyodideConsole(__main__.__dict__)
+export interface IPyConsoleClient {
+    output(payload: IOutputClientCmdPayload): void;
 
-    # return value
-    # sys.version
-    BANNER #{"banner": BANNER}
-    `
-    );
+    runStart(payload: IRunStartClientCmdPayload): void;
+    runComplete(payload: IRunCompleteClientCmdPayload): void; // runFinally?
 
-    return { banner, pyodide };
+    runStartStatement(payload: IRunStartStatementClientCmdPayload): void;
+    runCompleteStatement(payload: IRunCompleteStatementClientCmdPayload): void;
 }
 
-export const interpreterFactory = ({
-    pyodide,
-    callback
-}: // Command start + finish callbacks
-{
-    pyodide: PyodideInterface;
-    callback: (s: string, kind: 'cmd' | 'stdout' | 'stderr') => void;
-}) => {
-    const pyconsole: pyodidePkg.PyProxy = pyodide.runPython(`pyconsole`);
-    const reprShorten: pyodidePkg.PyProxy = pyodide.runPython(`repr_shorten`);
+export interface IPyMainClient {
+    startup(payload: IStartupRunClientCmdPayload): void;
+}
 
-    const handleStdout = (s: string, alwaysShorten: boolean): void => {
-        let ss = s;
-        if (alwaysShorten || s.length > 1000) {
-            ss = reprShorten.callKwargs(s, {
-                separator: '\n[[;orange;]<long output truncated>]\n'
-            });
-        }
-        callback(ss, 'stdout');
-        // console.info(`pyc: (len=${s.length}) '${ss}'`);
-    };
-    const handleStderr = (s: string): void => {
-        let ss = s;
-        if (s.length > 1000) {
-            ss = reprShorten.callKwargs(s, {
-                separator: '\n[[;orange;]<long output truncated>]\n'
-            });
-        }
-        callback(ss, 'stderr');
-        // console.error(`pyc stderr: (len=${s.length})  ${ss}`);
-    };
-    pyconsole.stdout_callback = (s: string): void => handleStdout(s, false);
-    pyconsole.stderr_callback = handleStderr;
+export interface IPyodideClient extends IPyConsoleClient, IPyMainClient {
+    workerError(payload: IWorkerErrorClientCmdPayload): void;
+}
 
-    return async (command: string): Promise<void> => {
-        let line = '';
+const PY_MAIN_STARTUP = `
+import sys
+from pyodide.console import PyodideConsole, BANNER, repr_shorten
+import __main__
+# pyconsole = PyodideConsole(__main__.__dict__)
+
+# return value
+# sys.version
+{"banner": BANNER, "reprShorten": repr_shorten}
+`;
+
+export class PySyntaxError extends Error {
+    line: number;
+    traceback: string;
+
+    constructor(traceback: string, line: number) {
+        super('SyntaxError');
+        this.traceback = traceback;
+        this.line = line;
+
+        // Set the prototype explicitly.
+        Object.setPrototypeOf(this, PySyntaxError.prototype);
+    }
+
+    static fromFuture(fut: IConsoleFuture, line: number): PySyntaxError {
+        return new PySyntaxError(
+            (fut.formatted_error || `Unknown SyntaxError @ line ${line}`).trim(),
+            line
+        );
+    }
+}
+
+class PyMain {
+    consoles: Record<string, PyConsole> = {};
+
+    /**
+     * // NOTE PyMain should be initialized from the async "init" command.
+     */
+    constructor(
+        public client: IPyodideClient,
+        public indexURL: string,
+        public pyodide: PyInterfaceExtended,
+        public banner: string,
+        public reprShorten: PyProxy // TODO Type this...Callable..
+    ) {
+        this.client.startup({ status: 'ready' });
+    }
+
+    async init(client: IPyodideClient, indexURL: string): Promise<PyMain> {
+        const pyodide: PyodideInterface = await pyodidePkg.loadPyodide({
+            indexURL
+        });
+
+        const initRes = pyodide.runPython(PY_MAIN_STARTUP);
+        const banner = initRes['banner'];
+        const reprShorten = initRes['reprShorten'];
+
+        return new PyMain(
+            client,
+            indexURL,
+            {
+                ...pyodide,
+                banner: initRes['banner'],
+                reprShorten: initRes['reprShorten']
+            },
+            banner,
+            reprShorten
+        );
+    }
+
+    // TODO Add status callbacks for these
+    createConsole(consoleId: string, name: string): void {
+        const c = new PyConsole(consoleId, name, this, this.client);
+        this.consoles[consoleId] = c;
+        // TODO Notify ready to go.
+    }
+    // removeConsole(consoleId: string): void {}
+    // restartConsole(consoleId: string): void {
+    //     // Same as creating new... Just use same id + name.
+    // }
+
+    // TODO Add FS handling...
+    // TODO Add interrupts
+}
+
+interface IConsoleFuture extends PyProxy {
+    syntax_check: 'incomplete' | 'syntax-error' | 'complete';
+    formatted_error?: string;
+}
+
+interface IPyodideConsole extends PyProxy {
+    push(code: string): IConsoleFuture;
+}
+
+class PyConsole {
+    pyc: IPyodideConsole;
+    activeCommandId: '<inactive>' | string = '<inactive>'; // QUESTION Switch to some other form? Like string | false
+
+    constructor(
+        public id: string,
+        public name: string,
+        public pyMain: PyMain,
+        public client: IPyConsoleClient
+    ) {
+        this.pyc = this.pyMain.pyodide.runPython(`PyodideConsole(__main__.__dict__)`);
+        this.pyc.stdout_callback = this.handleStdout;
+        this.pyc.stderr_callback = this.handleStderr;
+        // TODO Console ready callback
+    }
+
+    // TODO Add console-specific code completion
+    // codeComplete(command: string): void {}
+
+    async run(command: string, commandId: string): Promise<void> {
+        try {
+            this.setActiveCommandId(commandId);
+            // Wrap full command in command-level state trackers
+            this.client.runStart({
+                consoleId: this.id,
+                id: commandId,
+                code: command
+            });
+            await this._run(command, commandId);
+            this.client.runComplete({
+                consoleId: this.id,
+                id: commandId,
+                status: 'ok'
+            });
+        } catch (e) {
+            // HANDLE THE ERRORS
+            let err: IPyError;
+            if (!(e instanceof Error)) {
+                err = {
+                    kind: 'UnknownThrow',
+                    msg: 'Encountered unknown error.',
+                    traceback: `${e}`
+                };
+            } else if (e.constructor.name === 'PythonError') {
+                err = {
+                    kind: 'PythonError',
+                    msg: 'Encountered unknown error.',
+                    traceback: this.pyc.formattraceback(e).trimEnd()
+                };
+            } else if (e.constructor.name === 'SyntaxError') {
+                err = {
+                    kind: 'SyntaxError',
+                    msg: 'SyntaxError',
+                    traceback: this.pyc.formattraceb
+                };
+            } else {
+                err = {
+                    kind: 'Error',
+                    msg: e.message,
+                    traceback: e.stack || '[no traceback]'
+                };
+            }
+
+            this.client.runComplete({
+                consoleId: this.id,
+                id: commandId,
+                status: 'err',
+                err
+            });
+        } finally {
+            this.unsetActiveCommandId();
+        }
+    }
+
+    async _run(command: string, commandId: string): Promise<void> {
+        let startLine = 0,
+            endLine = 0,
+            nStatements = 0;
+
         for (const c of command.split('\n')) {
-            line += c;
-            const fut = pyconsole.push(c);
-            // console.log(fut);
+            endLine += 1;
+            const fut = this.pyc.push(c);
             switch (fut.syntax_check) {
                 case 'syntax-error':
-                    handleStderr(fut.formatted_error.trimEnd());
-                    line = '';
-                    continue;
+                    throw PySyntaxError.fromFuture(fut, startLine);
                 case 'complete':
-                    console.log(line);
-                    callback(line, 'cmd');
-                    line = '';
+                    this.client.runStartStatement({
+                        consoleId: this.id,
+                        id: commandId,
+                        lines: { start: startLine, end: endLine },
+                        n: nStatements
+                    });
                     break;
                 case 'incomplete':
-                    line += '\n';
                     continue;
                 default:
                     throw new Error(`Unexpected type ${fut.syntax_check}`);
@@ -86,27 +231,66 @@ export const interpreterFactory = ({
 
             try {
                 const value = await fut;
-                if (value !== undefined) {
-                    handleStdout(value, true);
-                }
-                if (pyodide.isPyProxy(value)) {
+
+                // TODO Determine what to do here...
+                const v = value.toString();
+                if (value && this.pyc.isPyProxy(value)) {
                     value.destroy();
                 }
-            } catch (e) {
-                if (!(e instanceof Error)) {
-                    throw new Error(`Bad e: ${e}`);
-                }
-                if (e.constructor.name === 'PythonError') {
-                    const message = pyconsole.formattraceback(e).trimEnd();
 
-                    callback(message, 'stderr');
-                } else {
-                    throw e;
-                }
+                this.client.runCompleteStatement({
+                    consoleId: this.id,
+                    id: commandId,
+                    n: nStatements,
+                    lines: { start: startLine, end: endLine },
+                    returns: v
+                });
             } finally {
-                // wrapper.destroy();
                 fut.destroy();
             }
+
+            // Update trackers for next statement
+            startLine = endLine + 1;
+            nStatements += 1;
         }
-    };
-};
+
+        // Never wrote out something that could be executed.
+        if (nStatements === 0) {
+            throw new PySyntaxError('Statement is incomplete.', startLine);
+        }
+    }
+
+    handleStdout(s: string) {
+        // TODO Determine what to do here. Don't have a million new lines.
+        const msg = s;
+        this.client.output({
+            consoleId: this.id,
+            id: this.activeCommandId,
+            stream: 'stdout',
+            msg: msg
+        });
+    }
+
+    handleStderr(e: string | Error) {
+        const msg = e.toString();
+        this.client.output({
+            consoleId: this.id,
+            id: this.activeCommandId,
+            stream: 'stdout',
+            msg: msg
+        });
+    }
+
+    private get reprShorten(): PyProxy {
+        // TODO Use this in stdout/stderr again.
+        return this.pyc.pyodide.reprShorten;
+    }
+
+    private setActiveCommandId(commandId: string): void {
+        this.activeCommandId = commandId;
+    }
+
+    private unsetActiveCommandId(): void {
+        this.activeCommandId = '<inactive>';
+    }
+}
