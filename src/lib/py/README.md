@@ -1,4 +1,4 @@
-# pyodide adapters
+# pyodide adapters <!-- omit in toc -->
 
 Initial work based off of what was happening in [`michaelwooley/pybros/michael/add-pyodide`](https://github.com/michaelwooley/pybros/tree/0a97fa9448c8c0738e631e16664c4ed9f8e608c6/src/lib/pyodide).
 
@@ -6,35 +6,41 @@ Initial work based off of what was happening in [`michaelwooley/pybros/michael/a
 ❯ cd src/lib/py
 ❯ tree
 .
-├── common.ts              # Actual pyodide interpreters
-├── examples.ts            # code samples
-├── index.ts               # Will be emptied out.
-├── protocol.ts            # types + enums of py protocol
+├── index.ts               # ❌ Will be emptied out.
+├── runtime.ts             # Actual pyodide runtime: agnostic w.r.t. worker v. main thread
 ├── pyodide.main.ts        # Main thread classes for py
-├── pyodide.worker.lib.ts  # Actual code for worker
-├── pyodide.worker.ts      # Worker itself.
+├── pyodide.worker.lib.ts  # Actual machinery/code for worker
+├── pyodide.worker.ts      # Worker itself: Minimal code, import machinery dynamically.
+├── py.types.d.ts          # Types for lib _not_ including protocol
+├── protocol.ts            # types + enums of py protocol
+├── examples.ts            # code samples
 └── README.md
 
-0 directories, 8 files
+0 directories, 9 files
 ```
 
-# Terminology
+## Terminology
+
+(These are notes to future-me. Need to be clear about this stuff...)
 
 Stuff is occurring at two venues:
 
 - _Main._ Refers to stuff running on the main browser thread.
 - _Worker._ A web worker running on another thread.
 
-Messages are passed back and forth between these two threads and actions occur in response to the messages. Sometimes you might want to call stuff that occurs on the main thread as happening "client-side" but I think that obscures the fact that both threads make use of a "client" at various points. Follow [gRPC Terminology](https://grpc.io/docs/what-is-grpc/introduction/):
+Messages are passed back and forth between these two threads and actions occur in response to the messages. Sometimes you might want to call stuff that occurs on the main thread as happening "client-side" but I think that obscures the fact that both threads make use of a "client" at various points. ~~~Follow [gRPC Terminology](https://grpc.io/docs/what-is-grpc/introduction/):~~~
 
-- _Service._ "Server-esque" object. Handles incoming messages and carries out required compute.
-- _Client._ Sends a message with a `cmd` and well-defined payload to the other thread.
+- 📨 **Service.** _(Incoming)_  "Server-esque" object. Handles incoming messages and carries out required compute.
+- 📬 **Client.** _(Outgoing)_  Sends a message with a `cmd` and well-defined payload to the other thread.
 
-The main and worker threads both have service _and_ client classes.
+TODO #17 Rename service/client to something else. "Hoster" and "Poster"?
 
-# Plan
+Both main and worker threads make use of both service _and_ client classes (these will be distinct and implied by the protocol).
 
-## Worker divisions
+
+## Plan
+
+### Worker divisions
 
 - _Top-level interpreter:_ Manage python environment and FS:
   - Functionality:

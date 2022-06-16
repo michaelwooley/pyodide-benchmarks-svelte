@@ -17,6 +17,10 @@ export type PyInterfaceExtended = PyodideInterface & {
     banner: string;
 };
 
+/**
+ * Outgoing messages
+ * Used by: `PyConsole`
+ */
 export interface IPyConsoleClient {
     output(payload: IOutputClientCmdPayload): void;
 
@@ -27,11 +31,20 @@ export interface IPyConsoleClient {
     runCompleteStatement(payload: IRunCompleteStatementClientCmdPayload): void;
 }
 
+/**
+ * Outgoing messages
+ * Used by: `PyMain`
+ */
 export interface IPyMainClient {
     startup(payload: IStartupRunClientCmdPayload): void;
 }
 
+/**
+ * Outgoing messages
+ * Combined class for runtime clases.
+ */
 export interface IPyodideClient extends IPyConsoleClient, IPyMainClient {
+    // QUESTION Is workerError appropriate if trying to be agnostic w.r.t. runtime?
     workerError(payload: IWorkerErrorClientCmdPayload): void;
 }
 
