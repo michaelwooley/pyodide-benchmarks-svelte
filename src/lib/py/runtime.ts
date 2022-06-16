@@ -1,40 +1,19 @@
+/**
+ * Python runtime logic.
+ *
+ * Agnostic w.r.t. communications protocol. (e.g. web worker v. main thread)
+ */
+import type { PyProxy } from 'pyodide';
 import * as pyodidePkg from 'pyodide';
-import type { PyProxy } from 'pyodide/pyodide.d';
+import type { IPyError } from './protocol';
 import type {
-    IOutputClientCmdPayload,
-    IPyError,
-    IRunCompleteClientCmdPayload,
-    IRunCompleteStatementClientCmdPayload,
-    IRunStartClientCmdPayload,
-    IRunStartStatementClientCmdPayload,
-    IStartupRunClientCmdPayload,
-    IWorkerErrorClientCmdPayload
-} from '$lib/py/protocol';
-
-export type PyodideInterface = GetInsidePromise<ReturnType<typeof pyodidePkg.loadPyodide>>;
-
-export type PyInterfaceExtended = PyodideInterface & {
-    reprShorten: PyProxy; // TODO Type this...Callable..
-    banner: string;
-};
-
-export interface IPyConsoleClient {
-    output(payload: IOutputClientCmdPayload): void;
-
-    runStart(payload: IRunStartClientCmdPayload): void;
-    runComplete(payload: IRunCompleteClientCmdPayload): void; // runFinally?
-
-    runStartStatement(payload: IRunStartStatementClientCmdPayload): void;
-    runCompleteStatement(payload: IRunCompleteStatementClientCmdPayload): void;
-}
-
-export interface IPyMainClient {
-    startup(payload: IStartupRunClientCmdPayload): void;
-}
-
-export interface IPyodideClient extends IPyConsoleClient, IPyMainClient {
-    workerError(payload: IWorkerErrorClientCmdPayload): void;
-}
+    IConsoleFuture,
+    IPyConsoleClient,
+    IPyodideClient,
+    IPyodideConsole,
+    PyInterfaceExtended,
+    PyodideInterface
+} from '$lib/py/py.types';
 
 const PY_MAIN_STARTUP = `
 import sys
@@ -68,11 +47,14 @@ export class PySyntaxError extends Error {
     }
 }
 
+/**
+ * Class that runs the main python thread + manages multiple consoles where actual compute occurs.
+ */
 class PyMain {
     consoles: Record<string, PyConsole> = {};
 
     /**
-     * // NOTE PyMain should be initialized from the async "init" command.
+     * @note PyMain should be initialized from the async "init" command.
      */
     constructor(
         public client: IPyodideClient,
@@ -84,6 +66,15 @@ class PyMain {
         this.client.startup({ status: 'ready' });
     }
 
+    /**
+     * !!! Should be used to create `PyMain`
+     *
+     * Actually runs startup commands for the main-thread python process.
+     *
+     * @param client A class that can be used to handle outgoing communication from events. (Not just WebWorker/postMessage necessarily.)
+     * @param indexURL Load URL for actual pyodide wasm + pack files.
+     * @returns A promise returning the `PyMain` instance
+     */
     async init(client: IPyodideClient, indexURL: string): Promise<PyMain> {
         const pyodide: PyodideInterface = await pyodidePkg.loadPyodide({
             indexURL
@@ -121,15 +112,13 @@ class PyMain {
     // TODO Add interrupts
 }
 
-interface IConsoleFuture extends PyProxy {
-    syntax_check: 'incomplete' | 'syntax-error' | 'complete';
-    formatted_error?: string;
-}
-
-interface IPyodideConsole extends PyProxy {
-    push(code: string): IConsoleFuture;
-}
-
+/**
+ * Python REPL that fields actual user commands.
+ *
+ * Created and managed by `PyMain`
+ *
+ * _Can_ be instantiated via normal `new PyConsole(...)` method.
+ */
 class PyConsole {
     pyc: IPyodideConsole;
     activeCommandId: '<inactive>' | string = '<inactive>'; // QUESTION Switch to some other form? Like string | false

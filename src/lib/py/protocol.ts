@@ -3,7 +3,7 @@
  */
 
 /**
- * // TODO Delete this in favor of returning actual errors.
+ * // TODO #16 Delete this in favor of returning actual errors.
  */
 export interface IPyError {
     msg: string;
