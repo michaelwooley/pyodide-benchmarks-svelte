@@ -1,12 +1,12 @@
 import type { PyProxy } from 'pyodide/pyodide.d';
 import type {
-    IOutputClientCmdPayload,
-    IRunCompleteClientCmdPayload,
-    IRunCompleteStatementClientCmdPayload,
-    IRunStartClientCmdPayload,
-    IRunStartStatementClientCmdPayload,
-    IStartupRunClientCmdPayload,
-    IWorkerErrorClientCmdPayload
+    IOutputMainSubPayload,
+    IRunCompleteMainSubPayload,
+    IRunCompleteStatementMainSubPayload,
+    IRunStartMainSubPayload,
+    IRunStartStatementMainSubPayload,
+    IStartupMainSubPayload,
+    IWorkerErrorMainSubPayload
 } from '$lib/py/protocol';
 import * as pyodidePkg from 'pyodide';
 
@@ -22,13 +22,13 @@ export type PyInterfaceExtended = PyodideInterface & {
  * Used by: `PyConsole`
  */
 export interface IPyConsoleClient {
-    output(payload: IOutputClientCmdPayload): void;
+    output(payload: IOutputMainSubPayload): void;
 
-    runStart(payload: IRunStartClientCmdPayload): void;
-    runComplete(payload: IRunCompleteClientCmdPayload): void; // runFinally?
+    runStart(payload: IRunStartMainSubPayload): void;
+    runComplete(payload: IRunCompleteMainSubPayload): void; // runFinally?
 
-    runStartStatement(payload: IRunStartStatementClientCmdPayload): void;
-    runCompleteStatement(payload: IRunCompleteStatementClientCmdPayload): void;
+    runStartStatement(payload: IRunStartStatementMainSubPayload): void;
+    runCompleteStatement(payload: IRunCompleteStatementMainSubPayload): void;
 }
 
 /**
@@ -36,7 +36,7 @@ export interface IPyConsoleClient {
  * Used by: `PyMain`
  */
 export interface IPyMainClient {
-    startup(payload: IStartupRunClientCmdPayload): void;
+    startup(payload: IStartupMainSubPayload): void;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface IPyMainClient {
  */
 export interface IPyodideClient extends IPyConsoleClient, IPyMainClient {
     // QUESTION Is workerError appropriate if trying to be agnostic w.r.t. runtime?
-    workerError(payload: IWorkerErrorClientCmdPayload): void;
+    workerError(payload: IWorkerErrorMainSubPayload): void;
 }
 
 // TODO Still need these?

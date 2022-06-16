@@ -1,5 +1,8 @@
 /**
- * Communication protocol/routes/handlers between the worker and client.
+ * Communication protocol/routes/handlers between the worker and main [threads].
+ *
+ * NOTE The protocol states everything in terms of messages that a thread _SUBSCRIBES_ to. However, could just as easily flip around and state in terms of messages that a given thread _PUBLISHES_ to. So `WorkerSubTopics` becomes `MainPubTopics`, `IOutputMainSub` becomes `IOutputWorkerPub`
+ *
  */
 
 /**
@@ -12,9 +15,12 @@ export interface IPyError {
 }
 
 /**
- * Commands recieved BY worker FROM client.
+ * Worker receives these messages from main thread.
+ *
+ * Worker thread subscribes to (and handles) these topics/routes.
+ * Main thread publishes to these topics/routes.
  */
-export enum WorkerCmdEnum {
+export enum WorkerSubTopics {
     RUN_CMD, // Run a python command
     // RUN_SCRIPT, // TODO Run a python script (work out FS, etc.)
     // LOAD_PACKAGE, // Load a py package from... (work out details of pypi v. pkg w/ c bindings.)
@@ -26,17 +32,21 @@ export enum WorkerCmdEnum {
 }
 
 /**
- * Commands recieved BY client FROM worker.
+ * Main receives these messages from worker thread.
+ *
+ * Worker thread publishes to these topics/routes.
+ * Main thread subscribes to (and handles) these topics/routes.
  */
-export enum ClientCmdEnum {
+export enum MainSubTopics {
     STARTUP, // Signal sent when interpreter is ready to start
     // SHUTDOWN,
 
     OUTPUT, // stderr+stdout streams. Return valuen returned in RUN*_COMPLETE.
-    RUN_START, // Start: Python cmd run
+
+    RUN_START, // Start: Python cmd run (all lines containing perhaps multiple statements)
     RUN_COMPLETE, // Complete: Python cmd run w/ return value (thrown errors?)
 
-    RUN_START_STATEMENT, // Start: Python cmd run
+    RUN_START_STATEMENT, // Start: One logical statement w/in larger command
     RUN_COMPLETE_STATEMENT, // Complete: Python cmd run w/ return value (thrown errors?)
 
     WORKER_ERROR // Worker-level error. Distinct from console errors.
@@ -46,9 +56,9 @@ export enum ClientCmdEnum {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface PyodideCmdDataPayload {}
+export interface IAbstractSubPayload {}
 
-interface PyodideCmdData<C extends number, P extends PyodideCmdDataPayload> {
+interface PyodideCmdData<C extends number, P extends IAbstractSubPayload> {
     cmd: C; // Command to be carried out by counterparty/
     payload: P; // Command-specific data.
 }
@@ -57,91 +67,91 @@ interface PyodideCmdData<C extends number, P extends PyodideCmdDataPayload> {
 //  WORKER COMMANDS
 // ////////////////////////////////////////
 
-export type WorkerCmdData<
-    C extends WorkerCmdEnum,
-    P extends PyodideCmdDataPayload
+export type IAbstractWorkerSub<
+    C extends WorkerSubTopics,
+    P extends IAbstractSubPayload
 > = PyodideCmdData<C, P>;
 
 /****************************************************************
  * RUN_CMD
  ****************************************************************/
-export interface IRunCmdWorkerCmdPayload extends PyodideCmdDataPayload {
+export interface IRunWorkerSubPayload extends IAbstractSubPayload {
     consoleId: string; // use nanoid
     id: string; // use nanoid
     code: string;
     // context: Record<string, any>;
 }
 
-export type IRunCmdWorkerCmd = WorkerCmdData<WorkerCmdEnum.RUN_CMD, IRunCmdWorkerCmdPayload>;
+export type IRunWorkerSub = IAbstractWorkerSub<WorkerSubTopics.RUN_CMD, IRunWorkerSubPayload>;
 
 /****************************************************************
  * RESTART
  ****************************************************************/
 
-export interface IRestartWorkerCmdPayload extends PyodideCmdDataPayload {
+export interface IRestartWorkerSubPayload extends IAbstractSubPayload {
     consoleId?: string; // TODO Make non-optional once have multiple consoles
 }
 
-export type IRestartWorkerCmd = WorkerCmdData<WorkerCmdEnum.RESTART, IRestartWorkerCmdPayload>;
+export type IRestartWorkerSub = IAbstractWorkerSub<
+    WorkerSubTopics.RESTART,
+    IRestartWorkerSubPayload
+>;
 
-export type IWorkerCmdsUnion = IRunCmdWorkerCmd | IRestartWorkerCmd;
+export type IWorkerCmdsUnion = IRunWorkerSub | IRestartWorkerSub;
 
 // ////////////////////////////////////////
 //  CLIENT COMMANDS
 // ////////////////////////////////////////
 
-export type ClientCmdData<
-    C extends ClientCmdEnum,
-    P extends PyodideCmdDataPayload
+export type IAbstractMainSub<
+    C extends MainSubTopics,
+    P extends IAbstractSubPayload
 > = PyodideCmdData<C, P>;
 
 /****************************************************************
  * STARTUP
  ****************************************************************/
 
-export interface IStartupRunClientCmdPayload extends PyodideCmdDataPayload {
+export interface IStartupMainSubPayload extends IAbstractSubPayload {
     status: 'ready' | 'failed';
     err?: Error;
     // consoleId: string; // TODO Differentiate between top-level and console startup. Different implications.
     // interruptBuffer: TypedArray;
 }
 
-export type IStartupRunClientCmd = ClientCmdData<
-    ClientCmdEnum.STARTUP,
-    IStartupRunClientCmdPayload
->;
+export type IStartupMainSub = IAbstractMainSub<MainSubTopics.STARTUP, IStartupMainSubPayload>;
 
 /****************************************************************
  * OUTPUT
  ****************************************************************/
 
-export interface IOutputClientCmdPayload extends PyodideCmdDataPayload {
+export interface IOutputMainSubPayload extends IAbstractSubPayload {
     consoleId: string;
     id: string;
     stream: 'stdout' | 'stderr'; // TODO Handle final return specialness
     msg: string;
 }
 
-export type IOutputClientCmd = ClientCmdData<ClientCmdEnum.OUTPUT, IOutputClientCmdPayload>;
+export type IOutputMainSub = IAbstractMainSub<MainSubTopics.OUTPUT, IOutputMainSubPayload>;
 
 /****************************************************************
  * RUN_START
  ****************************************************************/
 
-export interface IRunStartClientCmdPayload extends PyodideCmdDataPayload {
+export interface IRunStartMainSubPayload extends IAbstractSubPayload {
     consoleId: string;
     id: string;
     code: string;
     // perf: {} // TODO Add in performance stats
 }
 
-export type IRunStartClientCmd = ClientCmdData<ClientCmdEnum.RUN_START, IRunStartClientCmdPayload>;
+export type IRunStartMainSub = IAbstractMainSub<MainSubTopics.RUN_START, IRunStartMainSubPayload>;
 
 /****************************************************************
  * RUN_COMPLETE
  ****************************************************************/
 
-export interface IRunCompleteClientCmdPayload extends PyodideCmdDataPayload {
+export interface IRunCompleteMainSubPayload extends IAbstractSubPayload {
     consoleId: string;
     id: string;
     status: 'ok' | 'err'; // QUESTION Where do errors go???
@@ -149,16 +159,16 @@ export interface IRunCompleteClientCmdPayload extends PyodideCmdDataPayload {
     err?: IPyError;
 }
 
-export type IRunCompleteClientCmd = ClientCmdData<
-    ClientCmdEnum.RUN_COMPLETE,
-    IRunCompleteClientCmdPayload
+export type IRunCompleteMainSub = IAbstractMainSub<
+    MainSubTopics.RUN_COMPLETE,
+    IRunCompleteMainSubPayload
 >;
 
 /****************************************************************
  * RUN_START_STATEMENT
  ****************************************************************/
 
-export interface IRunStartStatementClientCmdPayload extends PyodideCmdDataPayload {
+export interface IRunStartStatementMainSubPayload extends IAbstractSubPayload {
     consoleId: string;
     id: string;
     n: number; // Statement index
@@ -168,16 +178,16 @@ export interface IRunStartStatementClientCmdPayload extends PyodideCmdDataPayloa
     };
 }
 
-export type IRunStartStatementClientCmd = ClientCmdData<
-    ClientCmdEnum.RUN_START_STATEMENT,
-    IRunStartStatementClientCmdPayload
+export type IRunStartStatementMainSub = IAbstractMainSub<
+    MainSubTopics.RUN_START_STATEMENT,
+    IRunStartStatementMainSubPayload
 >;
 
 /****************************************************************
  * RUN_COMPLETE_STATEMENT
  ****************************************************************/
 
-export interface IRunCompleteStatementClientCmdPayload extends PyodideCmdDataPayload {
+export interface IRunCompleteStatementMainSubPayload extends IAbstractSubPayload {
     consoleId: string;
     id: string;
     n: number; // Statement index
@@ -188,27 +198,29 @@ export interface IRunCompleteStatementClientCmdPayload extends PyodideCmdDataPay
     returns?: unknown; // TODO Pin this down...
 }
 
-export type IRunCompleteStatementClientCmd = ClientCmdData<
-    ClientCmdEnum.RUN_COMPLETE_STATEMENT,
-    IRunCompleteStatementClientCmdPayload
+export type IRunCompleteStatementMainSub = IAbstractMainSub<
+    MainSubTopics.RUN_COMPLETE_STATEMENT,
+    IRunCompleteStatementMainSubPayload
 >;
 
 /****************************************************************
  * WORKER_ERROR
  ****************************************************************/
 
-export interface IWorkerErrorClientCmdPayload extends PyodideCmdDataPayload {
+export interface IWorkerErrorMainSubPayload extends IAbstractSubPayload {
     err: IPyError;
 }
 
-export type IWorkerErrorClientCmd = ClientCmdData<
-    ClientCmdEnum.WORKER_ERROR,
-    IWorkerErrorClientCmdPayload
+export type IWorkerErrorMainSub = IAbstractMainSub<
+    MainSubTopics.WORKER_ERROR,
+    IWorkerErrorMainSubPayload
 >;
 
-export type IClientCmdsUnion =
-    | IStartupRunClientCmd
-    | IOutputClientCmd
-    | IRunStartClientCmd
-    | IRunCompleteClientCmd
-    | IWorkerErrorClientCmd;
+export type IMainSubUnion =
+    | IStartupMainSub
+    | IOutputMainSub
+    | IRunStartMainSub
+    | IRunCompleteMainSub
+    | IRunStartStatementMainSub
+    | IRunCompleteStatementMainSub
+    | IWorkerErrorMainSub;
