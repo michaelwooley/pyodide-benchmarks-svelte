@@ -16,7 +16,7 @@ import {
     type IClientCmdsUnion,
     type IWorkerCmdsUnion,
     type IWorkerErrorClientCmd
-} from './protocol';
+} from '$lib/py/protocol';
 import PyodideWorker from './pyodide.worker?worker';
 
 export interface IPyodideMainOnMessageCallbacks {

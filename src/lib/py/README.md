@@ -33,10 +33,9 @@ Messages are passed back and forth between these two threads and actions occur i
 - 📨 **Service.** _(Incoming)_  "Server-esque" object. Handles incoming messages and carries out required compute.
 - 📬 **Client.** _(Outgoing)_  Sends a message with a `cmd` and well-defined payload to the other thread.
 
-TODO #17 Rename service/client to something else. "Hoster" and "Poster"?
+TODO #17 Rename service/client to something else. Pub and sub!
 
 Both main and worker threads make use of both service _and_ client classes (these will be distinct and implied by the protocol).
-
 
 ## Plan
 
