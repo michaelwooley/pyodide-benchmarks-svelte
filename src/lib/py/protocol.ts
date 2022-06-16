@@ -97,7 +97,7 @@ export type IRestartWorkerSub = IAbstractWorkerSub<
     IRestartWorkerSubPayload
 >;
 
-export type IWorkerCmdsUnion = IRunWorkerSub | IRestartWorkerSub;
+export type IWorkerSubUnion = IRunWorkerSub | IRestartWorkerSub;
 
 // ////////////////////////////////////////
 //  CLIENT COMMANDS

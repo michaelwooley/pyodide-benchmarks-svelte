@@ -25,13 +25,13 @@ Initial work based off of what was happening in [`michaelwooley/pybros/michael/a
 
 Stuff is occurring at two venues:
 
-- _Main._ Refers to stuff running on the main browser thread.
-- _Worker._ A web worker running on another thread.
+-   _Main._ Refers to stuff running on the main browser thread.
+-   _Worker._ A web worker running on another thread.
 
 Messages are passed back and forth between these two threads and actions occur in response to the messages. Sometimes you might want to call stuff that occurs on the main thread as happening "client-side" but I think that obscures the fact that both threads make use of a "client" at various points. ~~~Follow [gRPC Terminology](https://grpc.io/docs/what-is-grpc/introduction/):~~~
 
-- 📨 **Sub[scribers].** _(Incoming)_ Handles incoming messages and carries out required compute.
-- 📬 **Pub[lisheers].** _(Outgoing)_ Sends a message with a `cmd` and well-defined payload to the other thread.
+-   📨 **Sub[scribers].** _(Incoming)_ Handles incoming messages and carries out required compute.
+-   📬 **Pub[lisheers].** _(Outgoing)_ Sends a message with a `cmd` and well-defined payload to the other thread.
 
 TODO #17 Rename service/client to something else. Pub and sub!
 
@@ -41,36 +41,36 @@ Both main and worker threads make use of both pub _and_ sub classes (these will 
 
 ### Worker divisions
 
-- _Top-level interpreter:_ Manage python environment and FS:
-  - Functionality:
-    - _Create_ child consoles.
-    - [**Interrupts**](https://pyodide.org/en/stable/usage/keyboard-interrupts.html) Emscripten + python setup ~> it will happen at top level..
-    - Surface FS info: what is in what dir? (Or just use `PyodideInterface#FS` directly?)
-    - Misc. tasks (better to do in dedicated child console? Probably.)
-      - Fetch banner/env info:
-      - Handle output formatting (e.g. shorten large outputs.)
-  - `PyodideInterface` also has some async eval possibilities worth exploring.
-- _Child consoles:_ Run actual user code.
-  - Actions:
-    - Execute code statements.
-    - Complete code.
-  - captures:
-    - For each command/call w/ ID:
-      - Command received.
-      - For each sub-command:
-        - Start Run
-        - SyntaxError: @code init ("pre-run")
-        - stdout from `print` statements during run.
-        - At end:
-          - Final value as stdout-ish: differences in this being a PyProxy v. stdout being just a string.
-          - stderr: Check for `PythonError`
+-   _Top-level interpreter:_ Manage python environment and FS:
+    -   Functionality:
+        -   _Create_ child consoles.
+        -   [**Interrupts**](https://pyodide.org/en/stable/usage/keyboard-interrupts.html) Emscripten + python setup ~> it will happen at top level..
+        -   Surface FS info: what is in what dir? (Or just use `PyodideInterface#FS` directly?)
+        -   Misc. tasks (better to do in dedicated child console? Probably.)
+            -   Fetch banner/env info:
+            -   Handle output formatting (e.g. shorten large outputs.)
+    -   `PyodideInterface` also has some async eval possibilities worth exploring.
+-   _Child consoles:_ Run actual user code.
+    -   Actions:
+        -   Execute code statements.
+        -   Complete code.
+    -   captures:
+        -   For each command/call w/ ID:
+            -   Command received.
+            -   For each sub-command:
+                -   Start Run
+                -   SyntaxError: @code init ("pre-run")
+                -   stdout from `print` statements during run.
+                -   At end:
+                    -   Final value as stdout-ish: differences in this being a PyProxy v. stdout being just a string.
+                    -   stderr: Check for `PythonError`
 
 ### Classes: abstract and concrete
 
-- Subscriber classes:
-  - Router method handles all incoming parts
-  - Abstract handlers for each topic: Receives payload + main/parent class
-- Publishers classes:
-  - Simple methods for each topic to remove need to include the topic when calling the method: `Publisher#runStart({...payload})` instead of `Publisher#pub({cmd: RUN_START, payload: {...payload}})`, etc.
-  - _Abstract_ method is the actual publisher.
-  - Always receives main/parent class as an input. This allows access to, e.g., worker.postMessage.
+-   Subscriber classes:
+    -   Router method handles all incoming parts
+    -   Abstract handlers for each topic: Receives payload + main/parent class
+-   Publishers classes:
+    -   Simple methods for each topic to remove need to include the topic when calling the method: `Publisher#runStart({...payload})` instead of `Publisher#pub({cmd: RUN_START, payload: {...payload}})`, etc.
+    -   _Abstract_ method is the actual publisher.
+    -   Always receives main/parent class as an input. This allows access to, e.g., worker.postMessage.

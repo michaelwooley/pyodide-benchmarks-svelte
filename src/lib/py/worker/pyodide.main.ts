@@ -14,7 +14,7 @@ import {
     type IRunStartMainSub,
     type IStartupMainSub,
     type IMainSubUnion,
-    type IWorkerCmdsUnion,
+    type IWorkerSubUnion,
     type IWorkerErrorMainSub
 } from '$lib/py/protocol';
 import PyodideWorker from './pyodide.worker?worker';
@@ -33,7 +33,7 @@ export interface IPyodideMainOnMessageCallbacks {
 export class PyodideMainClient {
     constructor(public worker: Worker) {}
 
-    private _postMessage(data: IWorkerCmdsUnion): void {
+    private _postMessage(data: IWorkerSubUnion): void {
         // if (!this.worker) {
         // 	// QUESTION Want to add a pre-worker command buffer instead of an error here? Will
         // 	// call all postMessage once worker is set.
