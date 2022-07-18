@@ -7,7 +7,7 @@ import type {
     IRunStartStatementMainSubPayload,
     IStartupMainSubPayload,
     IWorkerErrorMainSubPayload
-} from '$lib/py/protocol';
+} from '$lib/_py/protocol';
 import * as pyodidePkg from 'pyodide';
 
 export type PyodideInterface = GetInsidePromise<ReturnType<typeof pyodidePkg.loadPyodide>>;

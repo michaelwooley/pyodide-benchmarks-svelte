@@ -13,7 +13,7 @@ import type {
     IPyodideConsole,
     PyInterfaceExtended,
     PyodideInterface
-} from '$lib/py/py.types';
+} from '$lib/_py/py.types';
 
 const PY_MAIN_STARTUP = `
 import sys
