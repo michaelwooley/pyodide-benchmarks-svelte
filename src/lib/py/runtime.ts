@@ -90,6 +90,7 @@ export class PyConsole {
 
         // Wrap full command in command-level state trackers
         const fut = this.pyc.runsource(code);
+        console.log('[awaitable?] fut = ', fut);
         try {
             switch (fut.syntax_check) {
                 case 'complete':

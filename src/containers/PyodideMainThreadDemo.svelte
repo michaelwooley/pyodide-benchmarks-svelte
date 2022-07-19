@@ -17,9 +17,9 @@
     $: isRunning = csl && csl.status === 'active';
 
     onMount(async () => {
-        const PyMain = await (await import('$lib/py/runtime')).PyMain;
+        const pyPkg = await import('$lib/py/runtime');
 
-        py = await PyMain.init(PYODIDE_INDEX_URL, {
+        py = await pyPkg.PyMain.init(PYODIDE_INDEX_URL, {
             onOutput: (payload) => {
                 console.log('output', payload);
                 let data = payload.msg.split('\n');
