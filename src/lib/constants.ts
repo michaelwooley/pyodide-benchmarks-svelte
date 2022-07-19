@@ -9,6 +9,4 @@ export const PROJECT_REPO = 'https://github.com/michaelwooley/pyodide-benchmarks
 export const PROJECT_LICENSE = 'GNU General Public License v3.0';
 export const PROJECT_LICENSE_URL = `${PROJECT_REPO}/blob/dev/LICENSE`;
 
-export const PYODIDE_INDEX_URL = `https://cdn.jsdelivr.net/pyodide/v${
-    import.meta.env.VITE_PYODIDE_VERSION || 'v0.20.1a1'
-}/full/`;
+export const PYODIDE_INDEX_URL = import.meta.env.VITE_PYODIDE_INDEX_URL || '/raw/pyodide/';

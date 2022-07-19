@@ -1,4 +1,6 @@
-export const codeExamples: { name: string; code: string }[] = [
+export type TCodeExample = { name: string; code: string };
+
+export const codeExamples: TCodeExample[] = [
     {
         name: '1+1 (no print)',
         code: `1+1`
