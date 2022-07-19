@@ -7,6 +7,7 @@ import type {
     PyErrors
 } from './runtime.types';
 import * as pyerrs from './errors';
+import { PY_MAIN_STARTUP } from './constants';
 
 /**
  * Class that runs the main python thread + manages multiple consoles where actual compute occurs.
@@ -43,7 +44,7 @@ export class PyMain {
             indexURL
         });
 
-        // const initRes = pyodide.runPython(PY_MAIN_STARTUP);
+        const initRes = pyodide.runPython(PY_MAIN_STARTUP);
         // const banner = initRes['banner'];
         // const reprShorten = initRes['reprShorten'];
 
@@ -106,13 +107,14 @@ export class PyConsole {
             }
 
             // "Complete" case
-            const value = await fut;
+            console.log(fut.type);
+            const value = await fut; //.toJs();
 
             console.debug('return value: ', value);
 
             // TODO Determine what to do here...
-            const v = value.toString();
-            if (value && this.pyc.isPyProxy(value)) {
+            const v = (value || 'None').toString();
+            if (value && this.pyMain.pyodide.isPyProxy(value)) {
                 value.destroy();
             }
 

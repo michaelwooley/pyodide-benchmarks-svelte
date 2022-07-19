@@ -12,7 +12,7 @@
     export let isRunning: boolean;
     export let isLoaded: boolean;
 
-    $: isReady = isRunning && isLoaded && editor;
+    $: isReady = !isRunning && isLoaded && editor;
 
     async function handleKeydown(e: KeydownEventFull) {
         for (const fn of [handleTabbing, handleSubmitShortcut]) {
@@ -58,7 +58,15 @@
 </script>
 
 <div class="box">
-    <form bind:this={editor} class="form" on:submit|preventDefault disabled={!isReady}>
+    <form
+        bind:this={editor}
+        class="form"
+        on:submit|preventDefault
+        disabled={!isReady}
+        on:keydown={(e) => {
+            if (e.code === 'Enter') e.preventDefault();
+        }}
+    >
         <div class="columns">
             <div class="column">
                 <div class="field">

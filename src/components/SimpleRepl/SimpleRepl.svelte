@@ -27,7 +27,7 @@
 </div>
 
 <slot name="input">
-    <InputPanel {command} {codeExamples} {isRunning} {isLoaded} on:submit />
+    <InputPanel bind:command {codeExamples} {isRunning} {isLoaded} on:submit />
 </slot>
 
 <hr />
