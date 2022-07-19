@@ -177,7 +177,7 @@ class PyConsole {
             } else {
                 err = {
                     kind: 'Error',
-                    msg: e.message,
+                    msg: e.msg,
                     traceback: e.stack || '[no traceback]'
                 };
             }
