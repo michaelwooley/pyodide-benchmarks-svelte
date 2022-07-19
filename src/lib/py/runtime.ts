@@ -31,11 +31,10 @@ export class PyMain {
      *
      * Actually runs startup commands for the main-thread python process.
      *
-     * @param client A class that can be used to handle outgoing communication from events. (Not just WebWorker/postMessage necessarily.)
      * @param indexURL Load URL for actual pyodide wasm + pack files.
      * @returns A promise returning the `PyMain` instance
      */
-    async init(
+    static async init(
         // client: IPyodideClient,
         indexURL: string,
         consoleCallbacks: IPyconsoleCallbacks
