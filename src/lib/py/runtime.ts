@@ -45,6 +45,8 @@ export class PyMain {
         });
 
         const initRes = pyodide.runPython(PY_MAIN_STARTUP);
+        // console.log(initRes.toString());
+        initRes.destroy();
         // const banner = initRes['banner'];
         // const reprShorten = initRes['reprShorten'];
 
@@ -90,6 +92,7 @@ export class PyConsole {
         });
 
         // Wrap full command in command-level state trackers
+        // TODO Split into push for each line: milti-line statements still not okt
         const fut = this.pyc.runsource(code);
         console.log('[awaitable?] fut = ', fut);
         try {
@@ -107,10 +110,10 @@ export class PyConsole {
             }
 
             // "Complete" case
-            console.log(fut.type);
-            const value = await fut; //.toJs();
+            // console.log(fut.type);
+            const value = await fut;
 
-            console.debug('return value: ', value);
+            // console.debug('return value: ', value);
 
             // TODO Determine what to do here...
             const v = (value || 'None').toString();
@@ -171,7 +174,9 @@ export class PyConsole {
     private get callbackPayloadBase(): PyConsoleCallbackPayloads.IPyConsoleCallbackPayload {
         const cmdId = this.activeCmdId;
         if (cmdId == null) {
-            throw new Error('Cannot have tis1=!');
+            throw new Error(
+                `Cannot generate callback meta when command ID is unset: ${this.status}`
+            );
         }
 
         return {

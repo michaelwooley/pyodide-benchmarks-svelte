@@ -8,6 +8,7 @@
 
     import { onMount, tick } from 'svelte';
 
+    // TOOD Move these to a dedicated place...
     const consoleCallbacks = {
         onOutput: (payload) => {
             console.log('output', payload);
@@ -44,7 +45,7 @@
 
     let command: string = codeExamples[0].code;
     let output: string[] = [];
-    let py: PyMain;
+    let py: PyMain | undefined;
     let csl: PyConsole;
 
     $: isLoaded = py != null && csl != null && csl.status !== 'starting' ? true : false;
@@ -53,39 +54,17 @@
     onMount(async () => {
         const PyMain = await (await import('$lib/py/runtime')).PyMain;
         py = await PyMain.init(PYODIDE_INDEX_URL, consoleCallbacks);
-        csl = py.createConsole('0', 'cons');
+        csl = py.createConsole('0', 'console');
 
-        await tick();
+        await tick(); // ensures that isLoaded, isRunning kick in.
 
-        console.log(
-            py,
-            csl,
-            csl.status,
-            py != null && csl != null,
-            csl.status !== 'starting',
-            py != null && csl != null && csl.status !== 'starting',
-            isLoaded,
-            isRunning
-        );
-        // csl.run('print(1+1)', nanoid());
-        console.log(
-            py,
-            csl,
-            csl.status,
-            py != null && csl != null,
-            csl.status !== 'starting',
-            isLoaded,
-            isRunning
-        );
         return () => {
+            // TODO Shut this down...
             py = undefined;
         };
     });
 
-    async function handleSubmit(e: SubmitEvent) {
-        e.preventDefault();
-
-        console.log(command, isLoaded, isRunning, csl.status);
+    async function handleRunCommand(e: Event) {
         if (!isLoaded) {
             console.warn('Cannot run right now: ');
             return;
@@ -95,8 +74,30 @@
     }
 </script>
 
-<SimpleRepl {output} bind:command {isRunning} {isLoaded} {codeExamples} on:submit={handleSubmit}>
+<SimpleRepl {output} bind:command {isRunning} {isLoaded} {codeExamples} on:run={handleRunCommand}>
     <span slot="title">
         Library: <code>PyMain</code> + <code>PyConsole</code> on main thread.
     </span>
+
+    <ul slot="info">
+        <li><strong>Status </strong>: {isLoaded ? '✅ Ready.' : '⏳ Loading...'}</li>
+        <li>⚠️ The browser will probably feel like it is "freezing" until the load is complete.</li>
+        <li>
+            📋 TODOs:
+            <details>
+                <summary class="is-selectable">
+                    View full list
+                    <span class="icon">👇</span>
+                </summary>
+
+                <ol>
+                    <li>Get the pyodide static in order</li>
+                    <li>Handle multi-line statements</li>
+                    <li>Add webworker initializer.</li>
+                    <li>Add service worker for pyodide assets.</li>
+                    <li>Add py console session exports.</li>
+                </ol>
+            </details>
+        </li>
+    </ul>
 </SimpleRepl>

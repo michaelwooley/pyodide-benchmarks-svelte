@@ -5,7 +5,7 @@ export type PyodideInterface = GetInsidePromise<ReturnType<typeof pyodidePkg.loa
 
 export type PythonError = ValueOf<PyodideInterface, 'PythonError'>;
 
-export interface IConsoleFuture extends PyProxy {
+export interface IConsoleFuture extends Awaited<PyProxy> {
     syntax_check: 'incomplete' | 'syntax-error' | 'complete';
     formatted_error?: string;
 }

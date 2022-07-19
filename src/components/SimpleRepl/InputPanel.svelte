@@ -1,18 +1,25 @@
 <script lang="ts">
+    import { createEventDispatcher } from 'svelte';
+
     import type { TCodeExample } from '$lib/py/examples';
     import { tick } from 'svelte';
 
     type KeydownEventFull = KeyboardEvent & {
         currentTarget: EventTarget & HTMLTextAreaElement;
     };
-    let editor: HTMLFormElement;
+
+    const dispatch = createEventDispatcher<{ run: { command: string } }>();
 
     export let command: string;
     export let codeExamples: TCodeExample[];
     export let isRunning: boolean;
     export let isLoaded: boolean;
 
-    $: isReady = !isRunning && isLoaded && editor;
+    $: isReady = !isRunning && isLoaded;
+
+    function handleRun(e: Event) {
+        dispatch('run', { command });
+    }
 
     async function handleKeydown(e: KeydownEventFull) {
         for (const fn of [handleTabbing, handleSubmitShortcut]) {
@@ -40,7 +47,7 @@
         return false;
     }
 
-    function handleSubmitShortcut(e: KeydownEventFull): boolean {
+    function handleSubmitShortcut(e: KeydownEventFull | KeyboardEvent): boolean {
         if (!isReady) {
             return false;
         }
@@ -51,22 +58,14 @@
             e.preventDefault();
             return false;
         }
-
-        editor.submit();
+        e.stopPropagation();
+        handleRun(e);
         return true;
     }
 </script>
 
 <div class="box">
-    <form
-        bind:this={editor}
-        class="form"
-        on:submit|preventDefault
-        disabled={!isReady}
-        on:keydown={(e) => {
-            if (e.code === 'Enter') e.preventDefault();
-        }}
-    >
+    <form action={null} class="form" on:submit|preventDefault={handleRun} disabled={!isReady}>
         <div class="columns">
             <div class="column">
                 <div class="field">
