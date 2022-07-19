@@ -11,3 +11,8 @@ declare namespace App {
 
 // Brilliant: https://stackoverflow.com/a/60301306/3422060
 type GetInsidePromise<X> = X extends Promise<infer I> ? I : never;
+
+export type ValueOf<
+    ObjectType,
+    ValueType extends keyof ObjectType = keyof ObjectType
+> = ObjectType[ValueType];
