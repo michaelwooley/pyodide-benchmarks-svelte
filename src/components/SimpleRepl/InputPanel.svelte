@@ -59,7 +59,7 @@
             return false;
         }
         e.stopPropagation();
-        handleRun(e);
+        handleRun();
         return true;
     }
 </script>
