@@ -64,7 +64,7 @@
         };
     });
 
-    async function handleRunCommand(e: Event) {
+    async function handleRunCommand(_e: Event) {
         if (!isLoaded) {
             console.warn('Cannot run right now: ');
             return;

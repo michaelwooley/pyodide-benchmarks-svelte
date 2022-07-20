@@ -1,26 +1,29 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import PyWorker from '$lib/py/pyodide.worker.js?worker';
-    import { getBrowserName } from '$lib/util';
-    import { dev } from '$app/env';
-    let isReady = false,
-        worker: Worker;
+    import CheckChromeForDev from '$components/CheckChromeForDev.svelte';
+    import type { initPyWorker as TInitPyWorker } from '$lib/py/worker.handler';
+    import type { GetInsidePromise } from 'src/app';
+
+    let isReady = false;
+    let worker: GetInsidePromise<ReturnType<typeof TInitPyWorker>>['worker'];
+    let client: GetInsidePromise<ReturnType<typeof TInitPyWorker>>['client'];
 
     onMount(async () => {
-        if (dev && getBrowserName() !== 'Chrome') {
-            alert(
-                'Chrome is required in dev mode! Handling of imports in web workers is the issue!'
-            );
-            return;
-        }
+        const initPyWorker = await (await import('$lib/py/worker.handler')).initPyWorker;
+        const ipw = await initPyWorker();
+        worker = ipw.worker;
+        client = ipw.client;
 
-        worker = new PyWorker();
-        worker.onmessage = (e) => {
-            console.log('Worker msg:', e.data);
-        };
         isReady = true;
+
+        // Unload handler
+        return () => {
+            worker.terminate();
+        };
     });
 </script>
+
+<CheckChromeForDev />
 
 <div class="content">
     <h1 class="title is-1">

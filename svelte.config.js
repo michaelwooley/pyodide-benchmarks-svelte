@@ -20,7 +20,7 @@ const config = {
         prerender: {
             default: true
         },
-
+        // TODO Force inclusion of pyodide packages
         vite: {
             resolve: {
                 alias: {

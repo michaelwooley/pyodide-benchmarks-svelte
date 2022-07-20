@@ -17,7 +17,7 @@
 
     $: isReady = !isRunning && isLoaded;
 
-    function handleRun(e: Event) {
+    function handleRun(_e: Event) {
         dispatch('run', { command });
     }
 
