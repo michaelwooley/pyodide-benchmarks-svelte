@@ -1,20 +1,22 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import CheckChromeForDev from '$components/CheckChromeForDev.svelte';
-    import type { initPyWorker as TInitPyWorker } from '$lib/py/worker.handler';
+    import { initPyWorker } from '$lib/py/worker.handler';
     import type { GetInsidePromise } from 'src/app';
 
     let isReady = false;
-    let worker: GetInsidePromise<ReturnType<typeof TInitPyWorker>>['worker'];
-    let client: GetInsidePromise<ReturnType<typeof TInitPyWorker>>['client'];
+    let value = '';
+    let worker: GetInsidePromise<ReturnType<typeof initPyWorker>>['worker'];
+    let client: GetInsidePromise<ReturnType<typeof initPyWorker>>['client'];
 
     onMount(async () => {
-        const initPyWorker = await (await import('$lib/py/worker.handler')).initPyWorker;
         const ipw = await initPyWorker();
         worker = ipw.worker;
         client = ipw.client;
 
         isReady = true;
+        console.log(worker, client);
+        client('hellow, worl');
 
         // Unload handler
         return () => {
@@ -40,8 +42,10 @@
             <li>[Measure]</li>
         {:else}
             <li>
-                ⚠️ The browser will probably feel like it is "freezing" until the load is complete.
+                {`worker: ${worker}`}
             </li>
         {/if}
     </ul>
 </div>
+
+<textarea bind:value on:blur={() => client(value)} />

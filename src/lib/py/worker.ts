@@ -19,9 +19,12 @@ globalThis.customElements = null;
  */
 
 const main = async (): Promise<void> => {
+    self.postMessage('Trying to init');
     const workerWrapper = await (await import('./worker.lib')).workerWrapper; // Needs to happen after load.
     const handleMessage = await workerWrapper(self.postMessage);
+
     self.onmessage = handleMessage;
+    self.onerror = console.error; // TODO Handle onerror better!
 };
 
 main();

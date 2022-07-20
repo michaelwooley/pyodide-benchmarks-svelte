@@ -2,13 +2,7 @@
  * Imports + initializes worker module from main thread.
  */
 
-import PyWorker from './worker.ts?worker';
-
-// import { getBrowserName } from '$lib/util';
-// if (import.meta.env && getBrowserName() !== 'Chrome') {
-//     alert('Chrome is required in dev mode! Handling of imports in web workers is the issue!');
-//     return;
-// }
+import PyWorker from './worker?worker';
 
 export const initPyWorker = async (): Promise<{
     worker: Worker;
@@ -18,6 +12,9 @@ export const initPyWorker = async (): Promise<{
     const worker = new PyWorker();
     worker.onmessage = (e) => {
         console.log('Worker msg:', e.data);
+    };
+    worker.onerror = (e) => {
+        console.error('Worker msg:', e);
     };
 
     const client = (cmd: string) => worker.postMessage({ kind: 'exec', cmd });

@@ -1,10 +1,14 @@
+/**
+ * Code for worker: Import  bare min to worker proper.
+ */
+
 import { PYODIDE_INDEX_URL } from '$lib/constants';
 import { nanoid } from 'nanoid';
 import type { IPyconsoleCallbacks, PyConsoleCallbackPayloads } from './runtime.types.d';
 import { PyMain } from './runtime';
 
 type IPostMessage = Worker['postMessage'];
-type IOnMessage = Worker['onmessage'];
+type IOnMessage = Exclude<WindowEventHandlers['onmessage'], null>;
 
 const createConsoleCallbacks = (postMessage: IPostMessage): IPyconsoleCallbacks => {
     const _post = (
@@ -20,7 +24,13 @@ const createConsoleCallbacks = (postMessage: IPostMessage): IPyconsoleCallbacks 
     } as IPyconsoleCallbacks;
 };
 
-export const workerWrapper = (postMessage: IPostMessage) => async (): Promise<IOnMessage> => {
+/**
+ * Actual code for running pyodide in web worker.
+ *
+ * @param postMessage Method passed in from worker that can handle comms across threads.
+ * @returns A function suitable for use in
+ */
+export const workerWrapper = async (postMessage: IPostMessage): Promise<IOnMessage> => {
     postMessage({ kind: 'hello', payload: 'afs' });
     const consoleCallbacks = createConsoleCallbacks(postMessage);
 
@@ -28,9 +38,7 @@ export const workerWrapper = (postMessage: IPostMessage) => async (): Promise<IO
     const csl = py.createConsole('0', 'OG');
     csl.run("print('Ready to go')", nanoid());
 
-    postMessage({ kind: 'init', payload: 'Ready to go!' });
-
-    const fn = function (e: MessageEvent<any>) {
+    const fn = (e: MessageEvent<any>) => {
         const d = e.data;
         console.log(d);
 
