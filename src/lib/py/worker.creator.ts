@@ -4,7 +4,7 @@
 
 import PyWorker from './worker?worker';
 
-export const initPyWorker = async (): Promise<{
+export const createPyWorker = async (): Promise<{
     worker: Worker;
     client: (cmd: string) => void;
 }> => {

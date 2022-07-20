@@ -1,3 +1,4 @@
+<!-- Dev utility: Firefox will not work in dev mode if using vite [or pyodide?] w/ web workers/imports/etc. -->
 <script lang="ts">
     import { onMount } from 'svelte';
 

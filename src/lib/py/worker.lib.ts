@@ -10,20 +10,6 @@ import { PyMain } from './runtime';
 type IPostMessage = Worker['postMessage'];
 type IOnMessage = Exclude<WindowEventHandlers['onmessage'], null>;
 
-const createConsoleCallbacks = (postMessage: IPostMessage): IPyconsoleCallbacks => {
-    const _post = (
-        kind: string,
-        payload: PyConsoleCallbackPayloads.IPyConsoleCallbackPayload
-    ): void => postMessage({ kind, payload });
-    return {
-        // _post: (kind: string, payload: PyConsoleCallbackPayloads.IPyConsoleCallbackPayload): void =>
-        //     postMessage({ kind, payload }),
-        onOutput: (payload) => _post('output', payload),
-        onStartCmd: (payload) => _post('start', payload),
-        onEndCmd: (payload) => _post('end', payload)
-    } as IPyconsoleCallbacks;
-};
-
 /**
  * Actual code for running pyodide in web worker.
  *
@@ -38,7 +24,7 @@ export const workerWrapper = async (postMessage: IPostMessage): Promise<IOnMessa
     const csl = py.createConsole('0', 'OG');
     csl.run("print('Ready to go')", nanoid());
 
-    const fn = (e: MessageEvent<any>) => {
+    const fn = (e: MessageEvent<{ kind: string; [key: string]: string }>) => {
         const d = e.data;
         console.log(d);
 
@@ -50,4 +36,26 @@ export const workerWrapper = async (postMessage: IPostMessage): Promise<IOnMessa
     };
 
     return fn;
+};
+
+/**
+ * Factory for console callbacks.
+ *
+ * TODO Deprecate in favor of actual callbacks!
+ *
+ * @param postMessage From the worker.
+ * @returns Object of event callbacks.
+ */
+const createConsoleCallbacks = (postMessage: IPostMessage): IPyconsoleCallbacks => {
+    const _post = (
+        kind: string,
+        payload: PyConsoleCallbackPayloads.IPyConsoleCallbackPayload
+    ): void => postMessage({ kind, payload });
+    return {
+        // _post: (kind: string, payload: PyConsoleCallbackPayloads.IPyConsoleCallbackPayload): void =>
+        //     postMessage({ kind, payload }),
+        onOutput: (payload) => _post('output', payload),
+        onStartCmd: (payload) => _post('start', payload),
+        onEndCmd: (payload) => _post('end', payload)
+    } as IPyconsoleCallbacks;
 };

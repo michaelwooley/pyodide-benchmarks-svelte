@@ -1,16 +1,16 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import CheckChromeForDev from '$components/CheckChromeForDev.svelte';
-    import { initPyWorker } from '$lib/py/worker.handler';
+    import { createPyWorker } from '$lib/py/worker.creator';
     import type { GetInsidePromise } from 'src/app';
 
     let isReady = false;
     let value = '';
-    let worker: GetInsidePromise<ReturnType<typeof initPyWorker>>['worker'];
-    let client: GetInsidePromise<ReturnType<typeof initPyWorker>>['client'];
+    let worker: GetInsidePromise<ReturnType<typeof createPyWorker>>['worker'];
+    let client: GetInsidePromise<ReturnType<typeof createPyWorker>>['client'];
 
     onMount(async () => {
-        const ipw = await initPyWorker();
+        const ipw = await createPyWorker();
         worker = ipw.worker;
         client = ipw.client;
 
@@ -36,9 +36,7 @@
             <!-- <li><strong>{meas.name} </strong>: {(meas.duration / 1000).toPrecision(3)}s.</li> -->
             <li>[Measure]</li>
         {:else}
-            <li>
-                {`worker: ${worker}`}
-            </li>
+            <li>Yeah wait a bit.</li>
         {/if}
     </ul>
 </div>

@@ -6,6 +6,10 @@
 
 TODO Add "developing" section in README.
 
+## Gotchas
+
+-   Must use chromium-based browser (non-firefox) in dev mode!
+
 ## Reference environment
 
 ```bash
