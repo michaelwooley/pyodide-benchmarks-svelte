@@ -28,12 +28,7 @@
 <CheckChromeForDev />
 
 <div class="content">
-    <h1 class="title is-1">
-        Pyodide on web worker (See issue <a
-            href="https://github.com/michaelwooley/pyodide-benchmarks-svelte/issues/5"
-            target="_blank">#5</a
-        >)
-    </h1>
+    <h1 class="title is-1">Pyodide on web worker (Take ... n?)</h1>
 
     <ul>
         <li><strong>Status </strong>: {isReady ? '✅ Ready.' : '⏳ Loading...'}</li>
@@ -48,4 +43,15 @@
     </ul>
 </div>
 
-<textarea bind:value on:blur={() => client(value)} />
+<div class="field">
+    <div class="control">
+        <textarea
+            class="textarea is-family-code"
+            bind:value
+            on:blur={() => client(value)}
+            placeholder={!isReady ? 'Loading...' : 'Write python code here...'}
+        />
+    </div>
+    <p class="help">Blur to run the code.</p>
+</div>
+<button class="button is-large" on:click={() => client(value)}>Run code</button>
