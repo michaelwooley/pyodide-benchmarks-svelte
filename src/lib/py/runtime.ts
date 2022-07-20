@@ -111,7 +111,8 @@ export class PyConsole {
 
             // "Complete" case
             // console.log(fut.type);
-            const value = await fut;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            const value = await fut; // @ts-ignore
 
             // console.debug('return value: ', value);
 

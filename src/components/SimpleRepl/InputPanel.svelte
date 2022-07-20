@@ -17,7 +17,7 @@
 
     $: isReady = !isRunning && isLoaded;
 
-    function handleRun(e: Event) {
+    function handleRun() {
         dispatch('run', { command });
     }
 
@@ -59,7 +59,7 @@
             return false;
         }
         e.stopPropagation();
-        handleRun(e);
+        handleRun();
         return true;
     }
 </script>
